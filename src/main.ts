@@ -14,28 +14,67 @@ interface Product {
 
 const products: Product[] = [];
 let idCounter = 1;
-let totalPurchased = 0;
-let totalSold = 0;
 
 async function main() {
+  let userMoney = parseFloat(await rl.question("Enter your current money: "));
+
   while (true) {
     console.log("\n--- Product Management System ---");
-    console.log("1. Add Product");
+    console.log("1. Add to Inventory");
     console.log("2. Purchase Product");
-    console.log("3. Sell Product");
-    console.log("4. Product List");
-    console.log("5. Exit");
+    console.log("3. Product List");
+    console.log("4. Exit");
     const choice = await rl.question("Your choice: ");
 
     if (choice === "1") {
-      const name = await rl.question("Product name: ");
-      const price = parseFloat(await rl.question("Product price: "));
-      const stock = parseInt(await rl.question("Stock quantity: "), 10);
+      console.log("\n--- Inventory Management ---");
+      console.log("1. Add New Product");
+      console.log("2. Add to Existing Product");
+      const subChoice = await rl.question("Your choice: ");
 
-      products.push({ id: idCounter++, name, price, stock });
-      console.log("Product added successfully!");
+      if (subChoice === "1") {
+        const name = await rl.question("Product name: ");
+        const price = parseFloat(await rl.question("Unit price: "));
+        const stock = parseInt(
+          await rl.question("Initial stock quantity: "),
+          10
+        );
+
+        products.push({ id: idCounter++, name, price, stock });
+        console.log("New product added successfully!");
+      } else if (subChoice === "2") {
+        console.log("\n--- Existing Products ---");
+        products.forEach((product) => {
+          console.log(
+            `ID: ${product.id}, Name: ${
+              product.name
+            }, Price: $${product.price.toFixed(2)}, Stock: ${product.stock}`
+          );
+        });
+
+        const productId = parseInt(
+          await rl.question("Enter the product ID to add stock: "),
+          10
+        );
+        const quantity = parseInt(
+          await rl.question("Enter the quantity to add: "),
+          10
+        );
+
+        const product = products.find((p) => p.id === productId);
+        if (product) {
+          product.stock += quantity;
+          console.log(
+            `Added ${quantity} units to ${product.name}. New stock: ${product.stock}`
+          );
+        } else {
+          console.log("Invalid product ID.");
+        }
+      } else {
+        console.log("Invalid choice.");
+      }
     } else if (choice === "2") {
-      console.log("\n--- Product List ---");
+      console.log("\n--- Available Products ---");
       products.forEach((product) => {
         console.log(
           `ID: ${product.id}, Name: ${
@@ -55,11 +94,26 @@ async function main() {
 
       const product = products.find((p) => p.id === productId);
       if (product) {
-        product.stock += quantity;
-        totalPurchased += quantity;
-        console.log(
-          `${quantity} units of ${product.name} purchased successfully. New stock: ${product.stock}`
-        );
+        const totalCost = product.price * quantity;
+        if (quantity > product.stock) {
+          console.log("Not enough stock! Cannot complete the purchase.");
+        } else if (totalCost > userMoney) {
+          console.log("You don't have enough money to make this purchase.");
+        } else {
+          product.stock -= quantity;
+          userMoney -= totalCost;
+          console.log(
+            `Purchased ${quantity} units of ${
+              product.name
+            } for $${totalCost.toFixed(
+              2
+            )}. Remaining money: $${userMoney.toFixed(2)}. Stock left: ${
+              product.stock
+            }`
+          );
+        }
+      } else {
+        console.log("Invalid product ID.");
       }
     } else if (choice === "3") {
       console.log("\n--- Product List ---");
@@ -70,46 +124,7 @@ async function main() {
           }, Price: $${product.price.toFixed(2)}, Stock: ${product.stock}`
         );
       });
-
-      const productId = parseInt(
-        await rl.question("Enter the product ID to sell: "),
-        10
-      );
-      const quantity = parseInt(
-        await rl.question("Enter the quantity to sell: "),
-        10
-      );
-
-      const product = products.find((p) => p.id === productId);
-      if (product) {
-        if (product.stock >= quantity) {
-          product.stock -= quantity;
-          totalSold += quantity;
-          const totalRevenue = quantity * product.price;
-          console.log(
-            `${quantity} units of ${
-              product.name
-            } sold successfully. Total revenue: $${totalRevenue.toFixed(
-              2
-            )}. New stock: ${product.stock}`
-          );
-        } else {
-          console.log("Insufficient stock!");
-        }
-      }
     } else if (choice === "4") {
-      console.log("\n--- Product List ---");
-      products.forEach((product) => {
-        console.log(
-          `ID: ${product.id}, Name: ${
-            product.name
-          }, Price: $${product.price.toFixed(2)}, Stock: ${product.stock}`
-        );
-      });
-    } else if (choice === "5") {
-      console.log("\n--- End of Day Report ---");
-      console.log(`Total purchased quantity: ${totalPurchased}`);
-      console.log(`Total sold quantity: ${totalSold}`);
       console.log("Exiting the program...");
       break;
     } else {
